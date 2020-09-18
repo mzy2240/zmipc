@@ -15,8 +15,8 @@ from zmipc import ZMClient
 
 sender = ZMClient()
 receiver = ZMClient()
-sender.add_publication('test')
-receiver.add_subscription('test')
+sender.add_publication(topic='test')
+receiver.add_subscription(topic'test')
 sender.publish(topic='test', msg='Hello World!')
 print(receiver.receive(topic='test'))
 ```
