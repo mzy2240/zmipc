@@ -1,6 +1,6 @@
-# Project Title
-
-zmipc
+# zmipc
+[![MIT License](https://img.shields.io/apm/l/zmipc.svg?)](https://github.com/mzy2240/zmipc/LICENSEs)
+[![PyPi Version](https://img.shields.io/pypi/v/zmipc.svg)](https://pypi.python.org/pypi/zmipc/)
 
 ## Description
 
