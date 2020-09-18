@@ -1,5 +1,5 @@
 # zmipc
-[![MIT License](https://img.shields.io/pypi/l/zmipc.svg)](https://github.com/mzy2240/zmipc/LICENSEs)
+[![MIT License](https://img.shields.io/pypi/l/zmipc.svg)](https://github.com/mzy2240/zmipc/blob/master/LICENSE)
 [![PyPi Version](https://img.shields.io/pypi/v/zmipc.svg)](https://pypi.python.org/pypi/zmipc/)
 
 ## Description
