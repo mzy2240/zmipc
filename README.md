@@ -8,3 +8,15 @@ A Zero-copy Memory-sharing based IPC which intends to be handy in some cases whe
 
 ## Getting Started
 
+The usage of zmipc intends to be straight-forward. Here is an example:
+
+```python
+from zmipc import ZMClient
+
+sender = ZMClient()
+receiver = ZMClient()
+sender.add_publication('test')
+receiver.add_subscription('test')
+sender.publish(topic='test', msg='Hello World!')
+print(receiver.receive(topic='test'))
+```
