@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='zmipc',
-      version='0.2',
+      version='0.5',
       description='A zero-copy memory-sharing IPC on the top of mmap',
       long_description=long_description,
       long_description_content_type="text/markdown",
