@@ -1,4 +1,4 @@
-from multiprocessing import shared_memory
+import mmap
 import pickle
 import struct
 import threading
@@ -6,19 +6,40 @@ from queue import Queue
 import time
 from typing import Union
 import warnings
+import sys
 
 
 def mmap_write(mm, msg):
     payload = pickle.dumps(msg)
     payload_size = len(payload)
-    buffer = struct.pack('!I', payload_size) + payload
-    mm.buf[:4+payload_size] = buffer
+    not_empty = struct.unpack('!I', mm[:4])[0]
+    if not_empty:
+        warnings.warn("Memory is not empty!", Warning)
+    else:
+        mm.seek(0)
+        mm.write(struct.pack('!I', payload_size))
+        mm.seek(4)
+        mm.write(payload)
 
 
 def mmap_read(mm, size):
-    payload = pickle.loads(mm.buf[4:4 + size])
-    mm.buf[:4+size] = bytearray(4 + size)  # Clear the memory after reading
+    payload = pickle.loads(mm[4:4 + size])
+    mm.seek(0)
+    mm.write(bytearray(4 + size))  # Clear the memory after reading
     return payload
+
+
+def mmap_create(topic: str, msglen):
+    if sys.platform.startswith("linux"):
+        directory = "/dev/shm"
+        pathname = f"{directory}/{topic}.shm"
+        with open(pathname, "w+b") as f:
+            f.seek(msglen)
+            f.write(b"\0")
+        with open(pathname, "r+b") as f:
+            return mmap.mmap(f.fileno(), 0)
+    elif sys.platform.startswith("win"):
+        return mmap.mmap(-1, msglen, topic)
 
 
 class ZMHandler(threading.Thread):
@@ -35,7 +56,7 @@ class ZMHandler(threading.Thread):
     def run(self):
         while True:
             for topic, mm in self.subscription.items():
-                payload_size = struct.unpack('!I', mm.buf[:4])[0]
+                payload_size = struct.unpack('!I', mm[:4])[0]
                 if payload_size:
                     payload = mmap_read(mm, payload_size)
                     if self.callback:
@@ -67,12 +88,10 @@ class ZMClient:
         self.bg_flag = False
 
     def add_publication(self, topic: str, msglen: int = 100000):
-        self.publication[topic] = shared_memory.SharedMemory(
-            name=topic, create=True, size=msglen)
+        self.publication[topic] = mmap_create(topic, msglen)
 
     def add_subscription(self, topic: str, msglen: int = 100000):
-        self.subscription[topic] = shared_memory.SharedMemory(
-            name=topic, create=False, size=msglen)
+        self.subscription[topic] = mmap_create(topic, msglen)
 
     def publish(self, topic, msg, background=False):
         if background:
@@ -114,7 +133,7 @@ class ZMClient:
             while True:
                 if time.time() - start_timer >= timeout:
                     raise Exception("TimeoutError")
-                payload_size = struct.unpack('!I', mm.buf[:4])[0]
+                payload_size = struct.unpack('!I', mm[:4])[0]
                 if payload_size:
                     payload = mmap_read(mm, payload_size)
                     break
@@ -130,20 +149,7 @@ class ZMClient:
         if topic:
             mm = self.publication[topic]
             mm.close()
-            mm.unlink()
         else:
             for mm in self.publication.values():
                 mm.close()
-                mm.unlink()
 
-
-if __name__ == "__main__":
-    sender = ZMClient()
-    receiver = ZMClient()
-    sender.add_publication("test")
-    receiver.add_subscription("test")
-    sender.publish("test", {"lol": "hahahhhhhh"}, background=False)
-    # receiver.execute()
-    start = time.perf_counter()
-    print(receiver.receive("test", background=False))
-    print((time.perf_counter() - start) * 1000, 'ms')
